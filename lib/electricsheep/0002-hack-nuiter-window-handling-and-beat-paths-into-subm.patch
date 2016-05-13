@@ -1,0 +1,293 @@
+From 8ab204498cb23bab10d019960f93122237b48cb9 Mon Sep 17 00:00:00 2001
+From: Arne Morten Kvarving <arne.morten.kvarving@sintef.no>
+Date: Fri, 13 May 2016 22:33:00 +0200
+Subject: [PATCH 2/3] hack: nuiter window handling and beat paths into
+ submission
+
+---
+ client_generic/Client/client.h              |   4 +-
+ client_generic/DisplayOutput/OpenGL/glx.cpp | 161 +++++++++++++++-------------
+ 2 files changed, 88 insertions(+), 77 deletions(-)
+
+diff --git a/client_generic/Client/client.h b/client_generic/Client/client.h
+index 66d41aa..e3f9045 100644
+--- a/client_generic/Client/client.h
++++ b/client_generic/Client/client.h
+@@ -115,7 +115,7 @@ class	CElectricSheep
+ #else
+ 			char appdata[PATH_MAX];
+ 			snprintf( appdata, PATH_MAX, "%s/.electricsheep/", getenv("HOME") );
+-			if (g_Settings()->Init( appdata, SHAREDIR ) == false)
++			if (g_Settings()->Init( appdata, m_WorkingDir) == false)
+ #endif
+ 				return false;
+ 
+@@ -123,7 +123,7 @@ class	CElectricSheep
+ #ifndef LINUX_GNU
+ 			g_Settings()->Set( "settings.app.InstallDir", m_WorkingDir );
+ #else
+-			g_Settings()->Set( "settings.app.InstallDir", SHAREDIR );
++			g_Settings()->Set( "settings.app.InstallDir", m_WorkingDir);
+ #endif
+ 			return true;
+ 		}
+diff --git a/client_generic/DisplayOutput/OpenGL/glx.cpp b/client_generic/DisplayOutput/OpenGL/glx.cpp
+index e23a998..716012a 100644
+--- a/client_generic/DisplayOutput/OpenGL/glx.cpp
++++ b/client_generic/DisplayOutput/OpenGL/glx.cpp
+@@ -46,22 +46,22 @@ CUnixGL::CUnixGL() : CDisplayOutput()
+ 
+ CUnixGL::~CUnixGL()
+ {
+-#ifdef LINUX_GNU
+-  if (!bScreensaverMode) {
+-#endif
+-    XUnmapWindow (m_pDisplay, m_Window);
+-    XDestroyWindow (m_pDisplay, m_Window);
+-#ifdef LINUX_GNU
+-  }
+-#endif
+-  XCloseDisplay (m_pDisplay);
+-
+-#ifdef LINUX_GNU
+-    if ( !bScreensaverMode )
+-      /* disable screensaver and screen blanking in non-screensaver mode */
+-      int dummy = system( "xset s on 2>/dev/null; xset +dpms 2>/dev/null; gconftool-2 --set --type bool \
+-                              /apps/gnome-screensaver/idle_activation_enabled true 2>/dev/null" );
+-#endif
++//#ifdef LINUX_GNU
++//  if (!bScreensaverMode) {
++//#endif
++//    XUnmapWindow (m_pDisplay, m_Window);
++//    XDestroyWindow (m_pDisplay, m_Window);
++//#ifdef LINUX_GNU
++//  }
++//#endif
++//  XCloseDisplay (m_pDisplay);
++
++//#ifdef LINUX_GNU
++//    if ( !bScreensaverMode )
++//      /* disable screensaver and screen blanking in non-screensaver mode */
++//      int dummy = system( "xset s on 2>/dev/null; xset +dpms 2>/dev/null; gconftool-2 --set --type bool \
++//                              /apps/gnome-screensaver/idle_activation_enabled true 2>/dev/null" );
++//#endif
+ 
+ }
+ 
+@@ -78,7 +78,7 @@ bool	CUnixGL::Initialize( const uint32 _width, const uint32 _height, const bool
+ {
+     m_Width = _width;
+     m_Height = _height;
+-
++/*
+     m_pDisplay = XOpenDisplay(0);
+     assert(m_pDisplay);
+ 
+@@ -150,7 +150,7 @@ bool	CUnixGL::Initialize( const uint32 _width, const uint32 _height, const bool
+     winAttributes.event_mask = StructureNotifyMask | ButtonPressMask | KeyPressMask;
+     winAttributes.override_redirect = true;
+ 
+-#ifdef LINUX_GNU
++//#ifdef LINUX_GNU
+      const char *xss_id = getenv("XSCREENSAVER_WINDOW");
+      if (xss_id && *xss_id) {
+        int numReturned;
+@@ -198,64 +198,64 @@ bool	CUnixGL::Initialize( const uint32 _width, const uint32 _height, const bool
+        m_GlxContext = glXCreateNewContext(m_pDisplay, renderFBConfig, GLX_RGBA_TYPE, 0, GL_TRUE);
+        m_GlxWindow = glXCreateWindow(m_pDisplay, renderFBConfig, m_Window, 0);
+        glXMakeContextCurrent(m_pDisplay, m_GlxWindow, m_GlxWindow, m_GlxContext);
+-
++*/
+        /* disable screensaver and screen blanking in non-screensaver mode */
+-       int dummy = system( "xset s off 2>/dev/null; xset -dpms 2>/dev/null; gconftool-2 --set --type bool \
+-                                /apps/gnome-screensaver/idle_activation_enabled false 2>/dev/null" );
+-     }
+-
+-     Cursor invisibleCursor;
+-     Pixmap bitmapNoData;
+-     XColor black;
+-     static char noData[] = { 0,0,0,0,0,0,0,0 };
+-     black.red = black.green = black.blue = 0;
+-
+-     bitmapNoData = XCreateBitmapFromData( m_pDisplay, m_Window, noData, 8, 8 );
+-     invisibleCursor = XCreatePixmapCursor( m_pDisplay, bitmapNoData, bitmapNoData, 
+-					    &black, &black, 0, 0 );
+-     XDefineCursor( m_pDisplay, m_Window, invisibleCursor );
+-     XFreeCursor( m_pDisplay, invisibleCursor );
+-
+-#else
+-    m_Window = XCreateWindow( m_pDisplay, RootWindow( m_pDisplay, pVisualInfo->screen ), 0, 0, 
+-			      _bFullscreen?m_WidthFS:m_Width, _bFullscreen?m_HeightFS:m_Height, 0, 
+-			      pVisualInfo->depth, InputOutput,
+-			      pVisualInfo->visual, CWBorderPixel | CWColormap | CWEventMask, &winAttributes);
+-
+-    if (!bScreensaverMode) setFullScreen( _bFullscreen );
+-    XMapRaised( m_pDisplay, m_Window );
+-    if (!bScreensaverMode && _bFullscreen) XIfEvent( m_pDisplay, &event, WaitForNotify, (XPointer) m_Window );
+-
+-    m_GlxContext = glXCreateNewContext(m_pDisplay, renderFBConfig, GLX_RGBA_TYPE, 0, GL_TRUE);
+-    m_GlxWindow = glXCreateWindow(m_pDisplay, renderFBConfig, m_Window, 0);
+-    XMapWindow (m_pDisplay, m_Window);
+-    glXMakeContextCurrent(m_pDisplay, m_GlxWindow, m_GlxWindow, m_GlxContext);
+-#endif
+-
+-    Atom wmDelete = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", True);
+-    XSetWMProtocols(m_pDisplay, m_Window, &wmDelete, 1);
+-
+-    toggleVSync();
+-
+-    XFree (pVisualInfo);
+-
+-	int error = glGetError();
+-	if( error != GL_NO_ERROR )
+-	{
+-		std::string msg = "";
+-
+-		if( error == GL_INVALID_ENUM )	msg = "GL_INVALID_ENUM";
+-		else if( error == GL_INVALID_VALUE ) msg = "GL_INVALID_VALUE";
+-		else if( error ==    GL_INVALID_OPERATION) msg = "GL_INVALID_OPERATION";
+-		else if( error ==    GL_STACK_OVERFLOW)	msg = "GL_STACK_OVERFLOW";
+-		else if( error ==    GL_STACK_UNDERFLOW)	msg = "GL_STACK_UNDERFLOW";
+-		else if( error ==    GL_OUT_OF_MEMORY)	msg = "GL_OUT_OF_MEMORY";
+-		else if( error ==    GL_INVALID_FRAMEBUFFER_OPERATION_EXT)	msg = "GL_INVALID_FRAMEBUFFER_OPERATION_EXT";
+-		else msg = "Unrecognized OpenGL error";
+-
+-		g_Log->Error( "%s in %s(%d)", msg.c_str(), __FILE__, __LINE__ );
+-		return false;
+-	}
++//       int dummy = system( "xset s off 2>/dev/null; xset -dpms 2>/dev/null; gconftool-2 --set --type bool \
++//                                /apps/gnome-screensaver/idle_activation_enabled false 2>/dev/null" );
++//     }
++
++//     Cursor invisibleCursor;
++//     Pixmap bitmapNoData;
++//     XColor black;
++//     static char noData[] = { 0,0,0,0,0,0,0,0 };
++//     black.red = black.green = black.blue = 0;
++
++//     bitmapNoData = XCreateBitmapFromData( m_pDisplay, m_Window, noData, 8, 8 );
++//     invisibleCursor = XCreatePixmapCursor( m_pDisplay, bitmapNoData, bitmapNoData, 
++//                                            &black, &black, 0, 0 );
++//     XDefineCursor( m_pDisplay, m_Window, invisibleCursor );
++//     XFreeCursor( m_pDisplay, invisibleCursor );
++
++//#else
++//    m_Window = XCreateWindow( m_pDisplay, RootWindow( m_pDisplay, pVisualInfo->screen ), 0, 0, 
++//                              _bFullscreen?m_WidthFS:m_Width, _bFullscreen?m_HeightFS:m_Height, 0, 
++//                              pVisualInfo->depth, InputOutput,
++//                              pVisualInfo->visual, CWBorderPixel | CWColormap | CWEventMask, &winAttributes);
++
++//    if (!bScreensaverMode) setFullScreen( _bFullscreen );
++//    XMapRaised( m_pDisplay, m_Window );
++//    if (!bScreensaverMode && _bFullscreen) XIfEvent( m_pDisplay, &event, WaitForNotify, (XPointer) m_Window );
++
++//    m_GlxContext = glXCreateNewContext(m_pDisplay, renderFBConfig, GLX_RGBA_TYPE, 0, GL_TRUE);
++//    m_GlxWindow = glXCreateWindow(m_pDisplay, renderFBConfig, m_Window, 0);
++//    XMapWindow (m_pDisplay, m_Window);
++//    glXMakeContextCurrent(m_pDisplay, m_GlxWindow, m_GlxWindow, m_GlxContext);
++//#endif
++
++//    Atom wmDelete = XInternAtom(m_pDisplay, "WM_DELETE_WINDOW", True);
++//    XSetWMProtocols(m_pDisplay, m_Window, &wmDelete, 1);
++
++//    toggleVSync();
++
++//    XFree (pVisualInfo);
++
++//        int error = glGetError();
++//        if( error != GL_NO_ERROR )
++//        {
++//                std::string msg = "";
++
++//                if( error == GL_INVALID_ENUM )	msg = "GL_INVALID_ENUM";
++//                else if( error == GL_INVALID_VALUE ) msg = "GL_INVALID_VALUE";
++//                else if( error ==    GL_INVALID_OPERATION) msg = "GL_INVALID_OPERATION";
++//                else if( error ==    GL_STACK_OVERFLOW)	msg = "GL_STACK_OVERFLOW";
++//                else if( error ==    GL_STACK_UNDERFLOW)	msg = "GL_STACK_UNDERFLOW";
++//                else if( error ==    GL_OUT_OF_MEMORY)	msg = "GL_OUT_OF_MEMORY";
++//                else if( error ==    GL_INVALID_FRAMEBUFFER_OPERATION_EXT)	msg = "GL_INVALID_FRAMEBUFFER_OPERATION_EXT";
++//                else msg = "Unrecognized OpenGL error";
++
++//                g_Log->Error( "%s in %s(%d)", msg.c_str(), __FILE__, __LINE__ );
++//                return false;
++//        }
+ 
+ 	return true;
+ }
+@@ -264,6 +264,7 @@ bool	CUnixGL::Initialize( const uint32 _width, const uint32 _height, const bool
+ */
+ void CUnixGL::Title( const std::string &_title )
+ {
++  return;
+     XTextProperty textProp;
+     textProp.value = (unsigned char *)_title.c_str();
+     textProp.encoding = XA_STRING;
+@@ -277,6 +278,7 @@ void CUnixGL::Title( const std::string &_title )
+ */
+ void CUnixGL::setWindowDecorations( bool enabled )
+ {
++  return;
+     unsigned char* pucData;
+     int iFormat;
+     unsigned long ulItems;
+@@ -337,6 +339,8 @@ void CUnixGL::setWindowDecorations( bool enabled )
+ static bool
+ isWindowMapped(Display *dpy, Window *xWin)
+ {
++  return true;
++
+   XWindowAttributes attr;
+ 
+   XGetWindowAttributes(dpy, *xWin, &attr);
+@@ -353,6 +357,8 @@ isWindowMapped(Display *dpy, Window *xWin)
+ 
+ void CUnixGL::setFullScreen(bool enabled)
+ {
++  return;
++
+     XWindowChanges changes;
+     unsigned int valueMask = CWX | CWY | CWWidth | CWHeight;
+ 
+@@ -427,6 +433,7 @@ void CUnixGL::setFullScreen(bool enabled)
+ */
+ void CUnixGL::alwaysOnTop()
+ {
++  return;
+     //~ XClientMessageEvent xev;
+     //~ memset(&xev, 0, sizeof(xev));
+ 
+@@ -464,6 +471,7 @@ void CUnixGL::alwaysOnTop()
+ */
+ void CUnixGL::toggleVSync()
+ {
++  return;
+     m_VSync = !m_VSync;
+ 
+     if( GLEE_GLX_SGI_swap_control )
+@@ -479,6 +487,7 @@ void CUnixGL::toggleVSync()
+ */
+ void CUnixGL::Update()
+ {
++  return;
+     checkClientMessages();
+ }
+ 
+@@ -486,6 +495,7 @@ void CUnixGL::Update()
+ */
+ void CUnixGL::SwapBuffers()
+ {
++  return;
+     glXSwapBuffers( m_pDisplay, m_GlxWindow );
+ }
+ 
+@@ -521,6 +531,7 @@ void CUnixGL::SwapBuffers()
+ */
+ void CUnixGL::checkClientMessages()
+ {
++  return;
+     XEvent xEvent;
+ 
+     if( XCheckTypedEvent( m_pDisplay, ClientMessage, &xEvent ) )
+-- 
+2.7.4
+

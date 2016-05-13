@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<addon
+  id="screensaver.electricsheep"
+  version="1.0.0"
+  name="Electric Sheep"
+  provider-name="spiff">
+  <requires>
+    <c-pluff version="0.1"/>
+  </requires>
+  <extension
+    point="xbmc.ui.screensaver"
+    library_linux=""@LIBRARY_FILENAME@""/>
+  <extension point="xbmc.addon.metadata">
+    <summary>Electric Sheep screensaver</summary>
+    <description>Electric Sheep screensaver</description>
+    <platform>linux</platform>
+  </extension>
+</addon>

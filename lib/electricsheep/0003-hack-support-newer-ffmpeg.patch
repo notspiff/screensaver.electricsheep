@@ -1,0 +1,90 @@
+From e657fb375f33da81684d3d2b6a630e3bf630ff6c Mon Sep 17 00:00:00 2001
+From: Arne Morten Kvarving <arne.morten.kvarving@sintef.no>
+Date: Fri, 13 May 2016 22:33:28 +0200
+Subject: [PATCH 3/3] hack: support newer ffmpeg
+
+---
+ client_generic/Client/Player.cpp                 | 8 ++++----
+ client_generic/ContentDecoder/ContentDecoder.cpp | 2 +-
+ client_generic/ContentDecoder/ContentDecoder.h   | 4 ++--
+ client_generic/ContentDecoder/Frame.h            | 2 +-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/client_generic/Client/Player.cpp b/client_generic/Client/Player.cpp
+index d5218ec..b3a0a0b 100644
+--- a/client_generic/Client/Player.cpp
++++ b/client_generic/Client/Player.cpp
+@@ -365,18 +365,18 @@ ContentDecoder::CContentDecoder *CPlayer::CreateContentDecoder( bool _bStartByRa
+ 		return NULL;
+ 	
+ #ifndef LINUX_GNU
+-	PixelFormat pf = PIX_FMT_RGB32;
++	AVPixelFormat pf = AV_PIX_FMT_RGB32;
+ 	
+ 	//On PowerPC machines we need to use different pixel format!
+ #if defined(MAC) && defined(__BIG_ENDIAN__)
+-	pf = PIX_FMT_BGR32_1;
++	pf = AV_PIX_FMT_BGR32_1;
+ #endif
+ 
+ #else
+ 
+-	PixelFormat pf = PIX_FMT_BGR32;
++	AVPixelFormat pf = AV_PIX_FMT_BGR32;
+ #if defined(__BIG_ENDIAN__)
+-	pf = PIX_FMT_RGB32_1;
++	pf = AV_PIX_FMT_RGB32_1;
+ #endif
+ 
+ #endif
+diff --git a/client_generic/ContentDecoder/ContentDecoder.cpp b/client_generic/ContentDecoder/ContentDecoder.cpp
+index 92d646a..d1bad32 100644
+--- a/client_generic/ContentDecoder/ContentDecoder.cpp
++++ b/client_generic/ContentDecoder/ContentDecoder.cpp
+@@ -38,7 +38,7 @@ namespace ContentDecoder
+ 	CContentDecoder.
+ 
+ */
+-CContentDecoder::CContentDecoder( spCPlaylist _spPlaylist, bool _bStartByRandom, bool _bCalculateTransitions, const uint32 _queueLenght, PixelFormat _wantedFormat )
++CContentDecoder::CContentDecoder( spCPlaylist _spPlaylist, bool _bStartByRandom, bool _bCalculateTransitions, const uint32 _queueLenght, AVPixelFormat _wantedFormat )
+ {
+ 	g_Log->Info( "CContentDecoder()" );
+ 	m_FadeCount = static_cast<uint32>(g_Settings()->Get("settings.player.fadecount", 30));
+diff --git a/client_generic/ContentDecoder/ContentDecoder.h b/client_generic/ContentDecoder/ContentDecoder.h
+index 4948c8f..313fd8f 100644
+--- a/client_generic/ContentDecoder/ContentDecoder.h
++++ b/client_generic/ContentDecoder/ContentDecoder.h
+@@ -196,7 +196,7 @@ class CContentDecoder
+ 	
+ 	sOpenVideoInfo		*m_SecondVideoInfo;
+ 	
+-	PixelFormat		m_WantedPixelFormat;
++	AVPixelFormat		m_WantedPixelFormat;
+ 
+ 
+ 	spCPlaylist		m_spPlaylist;
+@@ -230,7 +230,7 @@ class CContentDecoder
+ 	static int DumpError( int _err );
+ 
+ 	public:
+-			CContentDecoder( spCPlaylist _spPlaylist, bool _bStartByRandom, bool _bAllowTransitions, const uint32 _queueLenght, PixelFormat _wantedPixelFormat = PIX_FMT_RGB24 );
++			CContentDecoder( spCPlaylist _spPlaylist, bool _bStartByRandom, bool _bAllowTransitions, const uint32 _queueLenght, AVPixelFormat _wantedPixelFormat = AV_PIX_FMT_RGB24 );
+ 			virtual ~CContentDecoder();
+ 
+ 			bool	Initialized() { return m_Initialized; }
+diff --git a/client_generic/ContentDecoder/Frame.h b/client_generic/ContentDecoder/Frame.h
+index dda244c..5e11f9b 100644
+--- a/client_generic/ContentDecoder/Frame.h
++++ b/client_generic/ContentDecoder/Frame.h
+@@ -75,7 +75,7 @@ class CVideoFrame
+ 		AVFrame		*m_pFrame;
+ 
+ 	public:
+-		CVideoFrame( AVCodecContext *_pCodecContext, PixelFormat _format, std::string _filename ) : m_pFrame(NULL)
++		CVideoFrame( AVCodecContext *_pCodecContext, AVPixelFormat _format, std::string _filename ) : m_pFrame(NULL)
+ 			{
+ 				assert( _pCodecContext );
+ 				if ( _pCodecContext == NULL)
+-- 
+2.7.4
+
