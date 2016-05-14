@@ -1,0 +1,4 @@
+<settings>
+  <setting id ="cpuusage_threshold" type="slider" range="0,5,100" option="percent" default="50" label="30000" />
+  <setting id ="fps" type="slider" range="5,5,60" default="30" label="30001" />
+</settings>

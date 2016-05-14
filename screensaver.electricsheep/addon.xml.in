@@ -9,7 +9,7 @@
   </requires>
   <extension
     point="xbmc.ui.screensaver"
-    library_linux=""@LIBRARY_FILENAME@""/>
+    library_linux="@LIBRARY_FILENAME@"/>
   <extension point="xbmc.addon.metadata">
     <summary>Electric Sheep screensaver</summary>
     <description>Electric Sheep screensaver</description>
