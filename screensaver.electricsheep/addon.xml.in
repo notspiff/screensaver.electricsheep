@@ -13,6 +13,6 @@
   <extension point="xbmc.addon.metadata">
     <summary>Electric Sheep screensaver</summary>
     <description>Electric Sheep screensaver</description>
-    <platform>linux</platform>
+    <platform>@PLATFORM@</platform>
   </extension>
 </addon>
