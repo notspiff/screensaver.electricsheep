@@ -1,0 +1,5 @@
+<settings>
+  <setting id="cpuusage_threshold" type="select" values="10 %|20 %|30 %|40 %|50 %|60 %|70 %|80 %|90 %|100 %" default="5" label="30000" />
+  <setting id="speed" type="enum" values="0.25x|0.5x|0.75x|1x|1.25x|1.5x|1.75x|2x" default="4" label="30001" />
+  <setting id="seamless" type="bool" default="false" label="30002"/>
+</settings>

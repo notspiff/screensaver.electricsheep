@@ -39,10 +39,7 @@ ADDON_STATUS ADDON_Create(void* hdl, void* props)
   if (!gSheep.init(p->presets))
     return ADDON_STATUS_PERMANENT_FAILURE;
 
-  g_Player().AddDisplay(g_Settings()->Get( "settings.player.screen", 0 ));
-  gSheep.Startup();
-
-  return ADDON_STATUS_OK;
+  return ADDON_STATUS_NEED_SETTINGS;
 }
 
 extern "C" void Stop() 
@@ -51,6 +48,8 @@ extern "C" void Stop()
 
 extern "C" void Start()
 {
+  g_Player().AddDisplay(g_Settings()->Get( "settings.player.screen", 0 ));
+  gSheep.Startup();
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -83,7 +82,7 @@ ADDON_STATUS ADDON_GetStatus()
 
 bool ADDON_HasSettings()
 {
-  return false;
+  return true;
 }
 
 unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
@@ -93,6 +92,13 @@ unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
 
 ADDON_STATUS ADDON_SetSetting(const char *strSetting, const void *value)
 {
+  if (strcmp(strSetting,"cpuusage_threshold") == 0)
+    g_Settings()->Set("settings.player.cpuusagethreshold", atoi((char*)value));
+  else if (strcmp(strSetting,"speed") == 0)
+    g_Settings()->Set("settings.player.player_fps", (0.25+0.25*(*(int*)(value)))*30.0);
+  else if (strcmp(strSetting,"seamless") == 0)
+    g_Settings()->Set("settings.player.SeamLessPlayback", *((bool*)value));
+
   return ADDON_STATUS_OK;
 }
 
