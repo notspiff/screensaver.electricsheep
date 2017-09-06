@@ -1,4 +1,4 @@
-#include "xbmc_scr_dll.h"
+#include "kodi/addon-instance/Screensaver.h"
 #include <GL/gl.h>
 #include <iostream>
 
@@ -22,90 +22,50 @@ public:
   }
 };
 
-AddonSheep gSheep;
-
 ////////////////////////////////////////////////////////////////////////////
 // XBMC has loaded us into memory, we should set our core values
 // here and load any settings we may have from our config file
 //
-ADDON_STATUS ADDON_Create(void* hdl, void* props)
+class CScreensaverSheep
+  : public kodi::addon::CAddonBase,
+    public kodi::addon::CInstanceScreensaver
 {
-  if (!props)
-    return ADDON_STATUS_UNKNOWN;
+public:
+  CScreensaverSheep()
+  {
+    g_Log->Startup();
+    if (!sheep.init(Presets().c_str()))
+    {
+      kodi::Log(ADDON_LOG_ERROR, "Failed to init the sheep!");
+      return;
+    }
+  }
 
-  SCR_PROPS* p = static_cast<SCR_PROPS*>(props);
+  bool Start()
+  {
+    g_Settings()->Set("settings.player.cpuusagethreshold",
+                      kodi::GetSettingInt("cpuusage_threshold"));
 
-  g_Log->Startup();
-  if (!gSheep.init(p->presets))
-    return ADDON_STATUS_PERMANENT_FAILURE;
+   g_Settings()->Set("settings.player.player_fps",
+                     0.25+0.25*kodi::GetSettingInt("speed")*30.0);
+   g_Settings()->Set("settings.player.SeamLessPlayback",
+                     kodi::GetSettingBoolean("seamless"));
+    g_Player().AddDisplay(g_Settings()->Get("settings.player.screen", 0));
+    sheep.Startup();
+    return true;
+  }
 
-  return ADDON_STATUS_NEED_SETTINGS;
-}
+  void Render()
+  {
+    sheep.Update();
+  }
 
-extern "C" void Stop() 
-{
-}
+  void Stop()
+  {
+    sheep.Shutdown();
+  }
 
-extern "C" void Start()
-{
-  g_Player().AddDisplay(g_Settings()->Get( "settings.player.screen", 0 ));
-  gSheep.Startup();
-}
+  AddonSheep sheep;
+};
 
-////////////////////////////////////////////////////////////////////////////
-// XBMC tells us to render a frame of our screensaver. This is called on
-// each frame render in XBMC, you should render a single frame only - the DX
-// device will already have been cleared.
-//
-extern "C" void Render()
-{
-  gSheep.Update();
-}
-
-////////////////////////////////////////////////////////////////////////////
-// XBMC tells us to stop the screensaver we should free any memory and release
-// any resources we have created.
-//
-extern "C" void ADDON_Stop()
-{
-  gSheep.Shutdown();
-}
-
-void ADDON_Destroy()
-{
-}
-
-ADDON_STATUS ADDON_GetStatus()
-{
-  return ADDON_STATUS_OK;
-}
-
-bool ADDON_HasSettings()
-{
-  return true;
-}
-
-unsigned int ADDON_GetSettings(ADDON_StructSetting ***sSet)
-{
-  return 0;
-}
-
-ADDON_STATUS ADDON_SetSetting(const char *strSetting, const void *value)
-{
-  if (strcmp(strSetting,"cpuusage_threshold") == 0)
-    g_Settings()->Set("settings.player.cpuusagethreshold", atoi((char*)value));
-  else if (strcmp(strSetting,"speed") == 0)
-    g_Settings()->Set("settings.player.player_fps", (0.25+0.25*(*(int*)(value)))*30.0);
-  else if (strcmp(strSetting,"seamless") == 0)
-    g_Settings()->Set("settings.player.SeamLessPlayback", *((bool*)value));
-
-  return ADDON_STATUS_OK;
-}
-
-void ADDON_FreeSettings()
-{
-}
-
-void ADDON_Announce(const char *flag, const char *sender, const char *message, const void *data)
-{
-}
+ADDONCREATOR(CScreensaverSheep);
