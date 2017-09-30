@@ -1,4 +1,5 @@
 ## Electric Sheep screensaver for Kodi
+[![Build Status](https://travis-ci.org/notspiff/screensaver.electricsheep.svg?branch=master)](https://travis-ci.org/notspiff/screensaver.electricsheep)
 
 This is a working screensaver for Kodi, however there is a big caveat;
 Since both Kodi and electric sheep utilizes FFmpeg, it is imperative
